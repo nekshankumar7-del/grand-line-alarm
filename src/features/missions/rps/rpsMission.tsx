@@ -158,6 +158,7 @@ function RpsRunner({ config, onProgress, onComplete, onUnavailable }: MissionRun
 
   return (
     <VisionShell
+      subject="hand"
       load={loadGestureRecognizer}
       badge={`✊✋✌️ Win ${need}`}
       overlay={overlay}
@@ -177,14 +178,14 @@ function RpsRunner({ config, onProgress, onComplete, onUnavailable }: MissionRun
           case 'waiting':
             st.handMs = result.landmarks[0] ? st.handMs + info.dt : 0
             if (st.handMs > 500) startRound()
-            return { hint: `Raise your hand ✋ to play (${st.wins}/${need} wins · ${st.losses} losses)`, good: Boolean(result.landmarks[0]), progress, done: false }
+            return { hint: `Raise your hand ✋ to play (${st.wins}/${need} wins · ${st.losses} losses)`, good: Boolean(result.landmarks[0]), detected: Boolean(result.landmarks[0]), progress, done: false }
           case 'capture':
             if (current) st.votes[current] += 1
-            return { hint: current ? `${EMOJI[current]} locked in!` : 'THROW NOW!', good: Boolean(current), progress, done: false }
+            return { hint: current ? `${EMOJI[current]} locked in!` : 'THROW NOW!', good: Boolean(current), detected: Boolean(result.landmarks[0]), progress, done: false }
           case 'countdown':
-            return { hint: 'Get ready to throw…', good: Boolean(result.landmarks[0]), progress, done: false }
+            return { hint: 'Get ready to throw…', good: Boolean(result.landmarks[0]), detected: Boolean(result.landmarks[0]), progress, done: false }
           default:
-            return { hint: st.wins >= need ? 'VICTORY!' : 'Next round coming…', good: true, progress, done: false }
+            return { hint: st.wins >= need ? 'VICTORY!' : 'Next round coming…', good: true, detected: Boolean(result.landmarks[0]), progress, done: false }
         }
       }}
     />

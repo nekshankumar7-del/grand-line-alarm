@@ -1,15 +1,20 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState, type RefObject } from 'react'
 import { db } from '@/db/db'
-import { describeFace, matchDistance, MATCH_THRESHOLD } from './faceId'
+import { describeFace, matchDistance } from './faceId'
 
 export type IdentityStatus = 'off' | 'loading' | 'checking' | 'match' | 'stranger'
 
 /**
- * Periodically checks that the face in front of the camera is the registered user.
- * A single far-away/blurred frame never fails you — only 2 confident mismatches in a row flag a stranger.
+ * During a mission the user has ALREADY passed the strict identity check at the start,
+ * so this background watch is deliberately lenient: it only exists to catch a clearly
+ * different person taking over. Phone angles, lighting and stepping back must never block you.
  */
-export function useIdentityWatch(videoRef: RefObject<HTMLVideoElement | null>, enabled: boolean, intervalMs = 2500) {
+const SAME_PERSON = 0.62 // a lot looser than the strict start check
+const MIN_FACE_PX = 70 // ignore tiny/far faces (e.g. full-body exercises)
+const MISMATCHES_TO_FLAG = 3
+
+export function useIdentityWatch(videoRef: RefObject<HTMLVideoElement | null>, enabled: boolean, intervalMs = 4000) {
   const profile = useLiveQuery(() => db.profile.get('me'), [])
   const [status, setStatus] = useState<IdentityStatus>('loading')
 
@@ -29,24 +34,23 @@ export function useIdentityWatch(videoRef: RefObject<HTMLVideoElement | null>, e
         try {
           const sample = await describeFace(video)
           if (stopped) return
-          if (sample) {
-            if (matchDistance(sample.descriptor, profile) < MATCH_THRESHOLD) {
-              mismatches = 0
-              setStatus('match')
-            } else if (++mismatches >= 2) {
-              setStatus('stranger')
-            }
-          } else {
+          if (!sample || sample.box.width < MIN_FACE_PX) {
+            // no clear face (far away / turned) — not evidence of anyone else
             setStatus((s) => (s === 'loading' ? 'checking' : s))
+          } else if (matchDistance(sample.descriptor, profile) < SAME_PERSON) {
+            mismatches = 0
+            setStatus('match')
+          } else if (++mismatches >= MISMATCHES_TO_FLAG) {
+            setStatus('stranger')
           }
         } catch {
-          if (!stopped) setStatus('off') // model failed to load — don't trap the user
+          if (!stopped) setStatus('off') // model failed — never trap the user
           return
         }
       }
       if (!stopped) timer = window.setTimeout(check, intervalMs)
     }
-    timer = window.setTimeout(check, 600)
+    timer = window.setTimeout(check, 1500)
     return () => {
       stopped = true
       window.clearTimeout(timer)

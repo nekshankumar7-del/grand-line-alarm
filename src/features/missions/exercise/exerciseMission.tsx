@@ -58,6 +58,7 @@ function makeRunner(kind: Kind) {
 
     return (
       <VisionShell
+        subject="body"
         load={loadPoseLandmarker}
         badge={kind === 'jumping-jacks' ? `🤸 ${config.reps} jumping jacks` : `🏋️ ${config.reps} squats`}
         overlay={overlay}
@@ -72,12 +73,12 @@ function makeRunner(kind: Kind) {
           const result = model.detectForVideo(video, info.now)
           if (result.landmarks.length > 1) {
             drawSkeleton(canvas, result.landmarks[0], false)
-            return { hint: 'One person at a time!', good: false, progress: counter.current.reps / config.reps, done: false }
+            return { hint: 'One person at a time!', good: false, detected: true, progress: counter.current.reps / config.reps, done: false }
           }
           const lm = result.landmarks[0] ?? null
           if (!lm) {
             drawSkeleton(canvas, null, false)
-            return { hint: 'Step into the frame!', good: false, progress: counter.current.reps / config.reps, done: false }
+            return { hint: 'Step into the frame — whole body visible!', good: false, detected: false, progress: counter.current.reps / config.reps, done: false }
           }
           const read = READERS[kind](lm)
           drawSkeleton(canvas, lm, read.inFrame)
@@ -86,7 +87,7 @@ function makeRunner(kind: Kind) {
             navigator.vibrate?.(40)
           }
           const n = counter.current.reps
-          return { hint: n >= config.reps ? 'TRIAL CLEARED!' : read.detail, good: read.inFrame, progress: n / config.reps, done: n >= config.reps }
+          return { hint: n >= config.reps ? 'MISSION CLEARED!' : read.detail, good: read.inFrame, detected: true, progress: n / config.reps, done: n >= config.reps }
         }}
       />
     )

@@ -16,11 +16,22 @@ async function fileset() {
 }
 
 /** Memoised loader with GPU → CPU fallback; resets on failure so it can be retried. */
+/**
+ * Phones: run tracking on the CPU. The face-ID check (TensorFlow.js) also uses the GPU, and on many
+ * phones two GPU users in one page stall each other — which looked like "the mission doesn't see me".
+ * Desktop keeps GPU first.
+ */
+const PREFER: Delegate =
+  typeof navigator !== 'undefined' && (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)))
+    ? 'CPU'
+    : 'GPU'
+const FALLBACK: Delegate = PREFER === 'CPU' ? 'GPU' : 'CPU'
+
 function lazy<T>(create: (delegate: Delegate) => Promise<T>) {
   let pending: Promise<T> | null = null
   return () => {
-    pending ??= create('GPU')
-      .catch(() => create('CPU'))
+    pending ??= create(PREFER)
+      .catch(() => create(FALLBACK))
       .catch((error: unknown) => {
         pending = null
         throw error

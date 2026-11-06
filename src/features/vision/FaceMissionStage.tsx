@@ -35,6 +35,7 @@ export function FaceMissionStage({ evaluate, badge, onProgress, onComplete, onUn
 
   return (
     <VisionShell
+      subject="face"
       load={loadFaceLandmarker}
       badge={badge}
       onProgress={onProgress}
@@ -57,7 +58,7 @@ export function FaceMissionStage({ evaluate, badge, onProgress, onComplete, onUn
         const gate = gateFor(reading)
         drawFace(canvas, video, reading, !gate)
         const v = evaluate(reading, info.dt, gate)
-        return { ...v, good: !gate }
+        return { ...v, good: !gate, detected: reading.faces > 0 }
       }}
     />
   )
