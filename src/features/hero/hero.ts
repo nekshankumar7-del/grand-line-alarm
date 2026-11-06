@@ -30,7 +30,7 @@ export const HERO: Hero = {
   personality: 'Quiet, steady, unshakeable. Few words — every one of them an order to get up.',
   catchphrase: 'The night is over. Rise.',
   aura: '#f59e0b',
-  voice: { pitch: 0.7, rate: 0.9, prefer: 'male' },
+  voice: { pitch: 0.35, rate: 0.82, prefer: 'male' },
   lines: {
     ring: ['The night is over. Rise.', 'I have watched all night. Your turn.', 'The city is waking. So are you.', 'Lights on. Feet on the floor.'],
     taunt: ['Focus.', 'Again. Faster.', 'The city does not wait.', 'Stay sharp.'],

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigation } from 'react-router'
 import { useAlarmEngine } from '@/features/alarms/useAlarmEngine'
 import { InstallCelebration } from '@/features/install'
+import { UpdatePrompt } from '@/pwa/UpdatePrompt'
 import { duration, ease } from '@/motion/tokens'
 
 /** Warm the code for every screen in the background so taps feel instant. */
@@ -75,6 +76,7 @@ export function RootLayout() {
         <Outlet />
       </motion.div>
       <InstallCelebration />
+      <UpdatePrompt />
     </>
   )
 }

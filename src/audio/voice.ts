@@ -5,7 +5,8 @@ import { getHero } from '@/features/hero/hero'
  * (on-device Web Speech API; no recordings, no imitation of real actors).
  */
 const HINTS = {
-  male: /male|david|daniel|alex|fred|george|mark|guy|ryan/i,
+  // deepest-sounding built-in male voices first
+  male: /(google uk english male|daniel|george|ryan|guy|fred|david|alex|mark|male)/i,
   female: /female|samantha|zira|victoria|karen|hazel|susan|aria|jenny/i,
 }
 

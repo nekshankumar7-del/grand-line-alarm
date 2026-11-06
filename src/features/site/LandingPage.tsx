@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ImpactText } from '@/components/fx/ImpactText'
 import { ButtonLink } from '@/components/ui/Button'
+import { versionLabel } from '@/config/version'
 import { APP } from '@/editions/editions'
 import { SentinelCity } from '@/editions/sentinel/SentinelCity'
 import { SentinelEmblem } from '@/editions/sentinel/SentinelEmblem'
@@ -181,6 +182,7 @@ export function LandingPage() {
             <SentinelEmblem color="#f59e0b" className="mx-auto mb-3 size-8 opacity-80" />
             <p>{APP.appName} · all camera processing happens on your device · nothing is recorded or uploaded.</p>
             <p className="mt-1">An original app — characters, city and emblem created for Night Sentinel.</p>
+            <p className="mt-1 text-white/40">{versionLabel}</p>
           </footer>
         </div>
       </main>

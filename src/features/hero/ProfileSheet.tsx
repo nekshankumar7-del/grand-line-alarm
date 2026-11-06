@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Sheet } from '@/components/ui/Sheet'
 import { db } from '@/db/db'
+import { versionLabel } from '@/config/version'
 import { APP, rankFor } from '@/editions/editions'
 import { useProfile } from '@/features/faceid/useProfile'
 import { cn } from '@/lib/cn'
@@ -156,6 +157,7 @@ export function ProfileSheet({ open, onClose }: { open: boolean; onClose(): void
           📸 Scan your face to create your portrait
         </Link>
       )}
+      <p className="mt-6 text-center text-xs font-bold opacity-50">Night Sentinel {versionLabel}</p>
       <AvatarLightbox open={zoomOpen} onClose={() => setZoomOpen(false)} />
     </Sheet>
   )
