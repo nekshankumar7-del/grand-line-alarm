@@ -1,4 +1,5 @@
 import '@/storageMigration'
+import '@/lib/perf'
 import '@fontsource/bebas-neue'
 import '@fontsource-variable/nunito'
 import '@/styles/global.css'

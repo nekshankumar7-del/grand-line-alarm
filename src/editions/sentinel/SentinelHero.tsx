@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react'
 import { cn } from '@/lib/cn'
+import { LITE } from '@/lib/perf'
 
 export type HeroMood = 'idle' | 'angry' | 'cheer'
 
@@ -41,32 +42,7 @@ function Figure({ ringing, happy, reduce }: { ringing: boolean; happy: boolean; 
       <path d="M79 280 L98 280 M102 280 L121 280" stroke={AMBER} strokeWidth={2.5} />
 
       {/* long coat */}
-      <motion.path
-        fill={COAT}
-        stroke={INK}
-        strokeWidth={3.5}
-        strokeLinejoin="round"
-        initial={false}
-        animate={
-          reduce
-            ? undefined
-            : {
-                d: ringing
-                  ? [
-                      'M62 112 Q100 98 138 112 L154 252 Q126 262 104 254 L100 214 L96 254 Q74 262 46 252Z',
-                      'M62 112 Q100 98 138 112 L160 250 Q128 266 104 254 L100 214 L96 254 Q70 258 42 256Z',
-                      'M62 112 Q100 98 138 112 L154 252 Q126 262 104 254 L100 214 L96 254 Q74 262 46 252Z',
-                    ]
-                  : [
-                      'M62 112 Q100 98 138 112 L154 252 Q126 262 104 254 L100 214 L96 254 Q74 262 46 252Z',
-                      'M62 112 Q100 98 138 112 L156 252 Q126 264 104 254 L100 214 L96 254 Q74 260 44 252Z',
-                      'M62 112 Q100 98 138 112 L154 252 Q126 262 104 254 L100 214 L96 254 Q74 262 46 252Z',
-                    ],
-              }
-        }
-        d="M62 112 Q100 98 138 112 L154 252 Q126 262 104 254 L100 214 L96 254 Q74 262 46 252Z"
-        transition={{ duration: ringing ? 0.5 : 3, repeat: Infinity }}
-      />
+      <path fill={COAT} stroke={INK} strokeWidth={3.5} strokeLinejoin="round" d="M62 112 Q100 98 138 112 L154 252 Q126 262 104 254 L100 214 L96 254 Q74 262 46 252Z" />
       <path d="M100 116 L100 214" stroke={COAT_DARK} strokeWidth={3} />
       <path d="M62 112 L46 252 M138 112 L154 252" stroke={AMBER} strokeWidth={1.6} opacity={0.7} />
       <rect x={64} y={180} width={72} height={10} rx={3} fill="#111827" stroke={INK} strokeWidth={2.5} />
@@ -88,7 +64,7 @@ function Figure({ ringing, happy, reduce }: { ringing: boolean; happy: boolean; 
         strokeLinecap="round"
         d="M116 118 Q136 140 150 132 Q160 150 172 142"
         initial={false}
-        animate={reduce ? undefined : { d: ['M116 118 Q136 140 150 132 Q160 150 172 142', 'M116 118 Q138 130 154 140 Q166 132 176 150', 'M116 118 Q136 140 150 132 Q160 150 172 142'] }}
+        animate={reduce || LITE ? undefined : { d: ['M116 118 Q136 140 150 132 Q160 150 172 142', 'M116 118 Q138 130 154 140 Q166 132 176 150', 'M116 118 Q136 140 150 132 Q160 150 172 142'] }}
         transition={{ duration: ringing ? 0.6 : 2, repeat: Infinity }}
       />
 

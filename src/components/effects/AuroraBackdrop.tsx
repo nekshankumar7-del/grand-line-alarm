@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react'
 import { cn } from '@/lib/cn'
+import { LITE } from '@/lib/perf'
 
 const BLOBS = [
   { color: 'var(--c-sky-deep)', size: '60vmax', x: ['-20%', '10%', '-20%'], y: ['-20%', '5%', '-20%'], d: 18 },
@@ -15,22 +16,22 @@ const BUBBLES = Array.from({ length: 14 }, (_, i) => ({
 }))
 
 /** Soft animated gradient-mesh background with rising bubbles (transform/opacity only). */
-export function AuroraBackdrop({ className, intensity = 0.55 }: { className?: string; intensity?: number }) {
+export function AuroraBackdrop({ className, intensity = 0.55, still = false }: { className?: string; intensity?: number; /** freeze motion (e.g. while the camera runs) */ still?: boolean }) {
   const reduce = useReducedMotion()
   return (
     <div aria-hidden className={cn('pointer-events-none fixed inset-0 -z-0 overflow-hidden bg-sea-deep', className)}>
       {BLOBS.map((b, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full blur-3xl"
-          style={{ width: b.size, height: b.size, background: b.color, opacity: intensity }}
+          className="absolute rounded-full"
+          style={{ width: b.size, height: b.size, background: `radial-gradient(closest-side, ${b.color}, transparent)`, opacity: intensity }}
           initial={{ x: b.x[0], y: b.y[0] }}
-          animate={reduce ? undefined : { x: b.x, y: b.y, scale: [1, 1.15, 1] }}
+          animate={reduce || still || LITE ? undefined : { x: b.x, y: b.y, scale: [1, 1.15, 1] }}
           transition={{ duration: b.d, repeat: Infinity, ease: 'easeInOut' }}
         />
       ))}
       <div className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.08)_1px,transparent_1px)] [background-size:22px_22px]" />
-      {!reduce &&
+      {!reduce && !still && !LITE &&
         BUBBLES.map((b, i) => (
           <motion.span
             key={i}

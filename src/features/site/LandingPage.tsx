@@ -1,5 +1,5 @@
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ImpactText } from '@/components/fx/ImpactText'
 import { ButtonLink } from '@/components/ui/Button'
@@ -40,7 +40,20 @@ function Section({ id, kicker, title, children }: { id?: string; kicker: string;
   )
 }
 
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setMatches(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [query])
+  return matches
+}
+
 export function LandingPage() {
+  const wide = useMediaQuery('(min-width: 768px)')
   const platform = useMemo(detectPlatform, [])
   const reduce = useReducedMotion()
   const { scrollY } = useScroll()
@@ -50,8 +63,7 @@ export function LandingPage() {
   return (
     <div className="relative min-h-dvh text-white">
       <SentinelCity />
-      <HangingSentinel id="landing-md" defaultX={0.82} className="hidden md:block" rope={230} size={170} />
-      <HangingSentinel id="landing" defaultX={0.84} className="md:hidden" rope={110} size={90} />
+      {wide ? <HangingSentinel id="landing-md" defaultX={0.82} rope={230} size={170} /> : <HangingSentinel id="landing" defaultX={0.84} rope={110} size={90} />}
 
       {/* nav */}
       <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur-md">

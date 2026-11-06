@@ -43,7 +43,20 @@ function greeting() {
   return 'Night falls, Sentinel'
 }
 
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setMatches(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [query])
+  return matches
+}
+
 export function WatchtowerPage() {
+  const wide = useMediaQuery('(min-width: 1280px)')
   const alarms = useLiveQuery(() => db.alarms.toArray().then((list) => list.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))), [])
   const profile = useProfile()
   const { bounty, streak, name, title } = usePlayerStore()
@@ -87,8 +100,7 @@ export function WatchtowerPage() {
     <div className="relative min-h-dvh">
       <SentinelCity />
       {/* grab it, pull it, let go — it bounces back */}
-      <HangingSentinel id="watchtower-xl" defaultX={0.88} className="hidden xl:block" rope={150} size={120} />
-      <HangingSentinel id="watchtower" defaultX={0.82} className="xl:hidden" rope={70} size={70} />
+      {wide ? <HangingSentinel id="watchtower-xl" defaultX={0.88} rope={150} size={120} /> : <HangingSentinel id="watchtower" defaultX={0.82} rope={70} size={70} />}
       <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />
       <AvatarLightbox open={zoomOpen} onClose={() => setZoomOpen(false)} />
 

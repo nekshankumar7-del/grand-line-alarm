@@ -142,3 +142,53 @@ h3,
 li {
   overflow-wrap: anywhere;
 }
+
+/* ---------- performance ---------- */
+/* cheap compositor-only flicker for a few city windows / neon signs */
+.window-flicker {
+  animation: window-flicker 5s ease-in-out infinite;
+}
+.neon-blink {
+  animation: neon-blink 4s steps(1, end) infinite;
+}
+@keyframes window-flicker {
+  0%, 100% { opacity: 1; }
+  40% { opacity: 0.15; }
+  55% { opacity: 1; }
+  70% { opacity: 0.6; }
+}
+@keyframes neon-blink {
+  0%, 100% { opacity: 1; }
+  70% { opacity: 0.35; }
+  78% { opacity: 1; }
+  90% { opacity: 0.2; }
+}
+
+/* Lite mode (phones / low-power devices): solid panels instead of live backdrop blur,
+   and no always-on glow/shine loops. */
+html.lite .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: linear-gradient(135deg, rgb(15 23 42 / 0.86), rgb(15 23 42 / 0.74));
+}
+html.lite .glow-ring,
+html.lite .text-shine,
+html.lite .window-flicker,
+html.lite .neon-blink {
+  animation: none;
+}
+html.lite .text-shine {
+  color: var(--c-gold);
+  background: none;
+}
+html.lite [class*='backdrop-blur'] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window-flicker,
+  .neon-blink {
+    animation: none;
+  }
+}

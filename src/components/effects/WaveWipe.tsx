@@ -16,7 +16,7 @@ export function WaveWipe({ routeKey }: { routeKey: string }) {
         transition={{ duration: 0.85, ease: ease.inOut }}
       >
         <div className="absolute inset-0 skew-x-[-12deg] bg-gradient-to-r from-transparent via-[#020617] to-transparent" />
-        <div className="absolute inset-y-0 left-1/2 w-40 -translate-x-1/2 skew-x-[-12deg] bg-gradient-to-r from-transparent via-amber-300/40 to-transparent blur-md" />
+        <div className="absolute inset-y-0 left-1/2 w-40 -translate-x-1/2 skew-x-[-12deg] bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
         <SentinelEmblem color="#f59e0b" className="absolute left-1/2 top-1/2 size-28 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_20px_rgba(245,158,11,0.8)]" />
       </motion.div>
     </AnimatePresence>

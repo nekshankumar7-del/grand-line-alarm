@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
+import { LITE } from '@/lib/perf'
 import { useThemeStore } from '@/store/themeStore'
 import { SentinelEmblem } from './SentinelEmblem'
 
@@ -38,8 +39,8 @@ const FAR = skyline(1, 22, 140, 300)
 const MID = skyline(50, 18, 110, 240)
 const NEAR = skyline(99, 14, 70, 160)
 
-function Row({ buildings, color, windowColor, litRatio, seed, neon }: { buildings: Building[]; color: string; windowColor: string; litRatio: number; seed: number; neon?: boolean }) {
-  const reduce = useReducedMotion()
+const Row = memo(function Row({ buildings, color, windowColor, litRatio, seed, neon }: { buildings: Building[]; color: string; windowColor: string; litRatio: number; seed: number; neon?: boolean }) {
+  const reduce = useReducedMotion() || LITE
   return (
     <svg viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice" className="absolute inset-x-0 bottom-0 h-full w-full">
       {buildings.map((b, i) => {
@@ -59,29 +60,28 @@ function Row({ buildings, color, windowColor, litRatio, seed, neon }: { building
               if (!lit) return null
               const flicker = !reduce && rand(seed + k * 17 + i) < 0.06
               return (
-                <motion.rect
+                <rect
                   key={k}
                   x={b.x + 6 + cx * ((b.w - 12) / cols)}
                   y={top + 10 + cy * 22}
                   width={6}
                   height={9}
                   fill={windowColor}
-                  animate={flicker ? { opacity: [1, 0.15, 1, 0.6, 1] } : undefined}
-                  transition={flicker ? { duration: 3 + rand(k) * 4, repeat: Infinity, delay: rand(i + k) * 5 } : undefined}
+                  className={flicker ? 'window-flicker' : undefined}
+                  style={flicker ? { animationDelay: `${(rand(i + k) * 5).toFixed(2)}s`, animationDuration: `${(3 + rand(k) * 4).toFixed(2)}s` } : undefined}
                 />
               )
             })}
             {neon && i % 4 === 1 && (
-              <motion.rect
+              <rect
                 x={b.x + b.w * 0.15}
                 y={top + 24}
                 width={b.w * 0.7}
                 height={10}
                 rx={5}
                 fill={i % 8 === 1 ? '#f472b6' : '#22d3ee'}
-                style={{ filter: 'drop-shadow(0 0 8px currentColor)' }}
-                animate={reduce ? undefined : { opacity: [1, 0.4, 1, 1, 0.2, 1] }}
-                transition={{ duration: 4, repeat: Infinity, delay: i * 0.3 }}
+                className={reduce ? undefined : 'neon-blink'}
+                style={{ animationDelay: `${(i * 0.3).toFixed(1)}s` }}
               />
             )}
           </g>
@@ -89,7 +89,7 @@ function Row({ buildings, color, windowColor, litRatio, seed, neon }: { building
       })}
     </svg>
   )
-}
+})
 
 function Searchlight({ color }: { color: string }) {
   const reduce = useReducedMotion()
@@ -179,11 +179,11 @@ export function SentinelCity() {
         />
       )}
       {/* low clouds */}
-      {[0, 1, 2].map((i) => (
+      {(LITE ? [0] : [0, 1, 2]).map((i) => (
         <motion.div
           key={i}
-          className="absolute h-24 w-[60vw] rounded-full blur-2xl"
-          style={{ top: `${6 + i * 9}%`, background: mood === 'neon' ? 'rgb(190 24 93 / 0.25)' : 'rgb(148 163 184 / 0.22)' }}
+          className="absolute h-24 w-[60vw] rounded-full"
+          style={{ top: `${6 + i * 9}%`, background: `radial-gradient(closest-side, ${mood === 'neon' ? 'rgb(190 24 93 / 0.28)' : 'rgb(148 163 184 / 0.24)'}, transparent)` }}
           initial={{ x: '-60vw' }}
           animate={reduce ? undefined : { x: '110vw' }}
           transition={{ duration: 70 + i * 20, repeat: Infinity, ease: 'linear', delay: -i * 25 }}
@@ -222,7 +222,7 @@ export function SentinelCity() {
           {[
             { o: mood === 'downpour' ? 0.5 : 0.25, d: 2.4 },
             { o: mood === 'downpour' ? 0.35 : 0.18, d: 3.6 },
-          ].map((l, i) => (
+          ].slice(0, LITE ? 1 : 2).map((l, i) => (
             <motion.div
               key={i}
               className="absolute inset-x-[-20%] -top-full h-[200%]"
@@ -235,7 +235,7 @@ export function SentinelCity() {
       )}
       {mood === 'downpour' && (
         <motion.div
-          className="absolute inset-x-[-30%] bottom-[18%] h-40 blur-2xl"
+          className="absolute inset-x-[-30%] bottom-[18%] h-40"
           style={{ background: 'linear-gradient(90deg, transparent, rgb(203 213 225 / 0.25), transparent)' }}
           animate={reduce ? undefined : { x: ['-10%', '10%', '-10%'] }}
           transition={{ duration: 18, repeat: Infinity }}

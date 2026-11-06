@@ -124,7 +124,7 @@ export function TrialPage() {
           🚫 No escape — finish every mission to stop the alarm.
         </motion.div>
       )}
-      <AuroraBackdrop intensity={0.45} />
+      <AuroraBackdrop intensity={0.45} still />
       <div className="relative z-10 mx-auto flex max-w-md flex-col items-center gap-4 pt-4">
         <div className="glass flex w-full items-center gap-3 rounded-[1.75rem] p-2 pr-4">
           <SentinelHero mood={cheer ? 'cheer' : 'angry'} className="h-24 w-24 shrink-0" />
