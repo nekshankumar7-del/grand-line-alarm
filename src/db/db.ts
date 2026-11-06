@@ -5,8 +5,24 @@ import type { ActiveAlarm, Alarm, FaceProfile, WakeRecord } from '@/features/ala
 export interface CustomSound {
   id: string
   name: string
-  blob: Blob
+  /** Raw file bytes (ArrayBuffer is stored reliably in IndexedDB on every browser, unlike Blob on some phones). */
+  data?: ArrayBuffer
+  /** Older entries stored a Blob. */
+  blob?: Blob
+  mime?: string
+  /** Full length of the file in seconds. */
+  duration?: number
+  /** The part of the song used for the alarm (seconds). */
+  start?: number
+  end?: number
   createdAt: number
+}
+
+/** Bytes of a stored device sound, whatever format it was saved in. */
+export async function soundBytes(rec: CustomSound): Promise<ArrayBuffer | null> {
+  if (rec.data) return rec.data
+  if (rec.blob) return rec.blob.arrayBuffer()
+  return null
 }
 
 const SCHEMA = {

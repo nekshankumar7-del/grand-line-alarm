@@ -65,11 +65,25 @@ export function AlarmCard({ alarm, onDelete }: { alarm: Alarm; onDelete(alarm: A
             ))}
           </p>
         </div>
-        <Toggle
-          label={`${alarm.enabled ? 'Disable' : 'Enable'} ${formatTime(alarm.hour, alarm.minute)} alarm`}
-          checked={alarm.enabled}
-          onChange={(enabled) => void db.alarms.update(alarm.id, { enabled, armedAt: Date.now() })}
-        />
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <Toggle
+            label={`${alarm.enabled ? 'Disable' : 'Enable'} ${formatTime(alarm.hour, alarm.minute)} alarm`}
+            checked={alarm.enabled}
+            onChange={(enabled) => void db.alarms.update(alarm.id, { enabled, armedAt: Date.now() })}
+          />
+          <button
+            type="button"
+            aria-label={`Delete ${formatTime(alarm.hour, alarm.minute)} alarm`}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(alarm)
+            }}
+            className="grid size-9 place-items-center rounded-full border-2 border-black/30 bg-black/10 text-base transition-colors hover:bg-red-600 hover:text-white"
+          >
+            🗑
+          </button>
+        </div>
       </motion.div>
     </motion.li>
   )

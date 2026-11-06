@@ -5,6 +5,7 @@ import type { RingtoneId } from '@/audio/ringtones'
 import { AuroraBackdrop } from '@/components/effects/AuroraBackdrop'
 import { Button } from '@/components/ui/Button'
 import { db } from '@/db/db'
+import { alarmSound } from '@/audio/alarmSound'
 import { speak } from '@/audio/voice'
 import { SentinelHero } from '@/editions/sentinel/SentinelHero'
 import { useEdition } from '@/editions/useEdition'
@@ -85,6 +86,7 @@ export function AlarmEditorPage() {
   async function persist() {
     if (!draft) return
     await db.alarms.put({ ...draft, label: draft.label.trim() || 'Alarm', enabled: true, armedAt: Date.now() })
+    alarmSound.warm(draft.sound)
   }
 
   async function run(action: 'save' | 'test') {
@@ -105,6 +107,7 @@ export function AlarmEditorPage() {
 
   async function remove() {
     if (!draft) return
+    if (!window.confirm('Delete this alarm? This can’t be undone.')) return
     await db.alarms.delete(draft.id)
     navigate('/app')
   }
@@ -121,6 +124,11 @@ export function AlarmEditorPage() {
             <h1 className="font-display text-4xl tracking-wide text-outline manga-shadow">{id ? 'Edit alarm' : 'New alarm'}</h1>
             <p className="text-sm text-white/70">{next ? `Rings in ${formatCountdown(next.getTime() - Date.now())}` : 'Pick at least one day'}</p>
           </div>
+          {id && (
+            <button type="button" onClick={() => void remove()} aria-label="Delete this alarm" className="glass grid size-11 shrink-0 place-items-center rounded-full text-xl">
+              🗑
+            </button>
+          )}
           {profile?.photo && (
             <Link to="/app/face" title="Face ID registered" className="relative">
               <img src={profile.photo} alt="Your face ID" className="size-11 rounded-full border-2 border-gold object-cover" />

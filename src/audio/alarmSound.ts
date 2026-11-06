@@ -1,4 +1,4 @@
-import { db } from '@/db/db'
+import { db, soundBytes } from '@/db/db'
 import { DEFAULT_RINGTONE, ringtoneFor, RINGTONE_MAP, type RingtoneId } from './ringtones'
 
 export const CUSTOM_PREFIX = 'custom:'
@@ -25,7 +25,10 @@ class AlarmSound {
   /** Device sound currently playing as the alarm (looped). */
   private customId: string | null = null
   private customSource: AudioBufferSourceNode | null = null
-  private bufferCache = new Map<string, AudioBuffer>()
+  private bufferCache = new Map<string, { buffer: AudioBuffer; start: number; end: number }>()
+  /** The device sound failed to load (or took too long) → built-in beep covers. */
+  private customFailed = false
+  private customRequestedAt = 0
 
   /** Must run inside a user gesture at least once so later alarms may play. */
   unlock() {
@@ -62,6 +65,8 @@ class AlarmSound {
     }
     this.nextLoop = 0
     this.nextHarsh = 0
+    this.customFailed = false
+    this.customRequestedAt = Date.now()
     if (this.customId) void this.startCustom(this.customId)
     this.schedule()
     this.timer = window.setInterval(() => this.schedule(), 200)
@@ -90,25 +95,42 @@ class AlarmSound {
     this.unlock()
     const rec = await db.sounds.get(id)
     if (!rec || !this.ctx) return null
-    const buffer = await this.ctx.decodeAudioData(await rec.blob.arrayBuffer())
-    this.bufferCache.set(id, buffer)
-    return buffer
+    const bytes = await soundBytes(rec)
+    if (!bytes) return null
+    // decodeAudioData detaches the buffer it is given, so decode a copy.
+    const buffer = await this.ctx.decodeAudioData(bytes.slice(0))
+    const start = Math.max(0, Math.min(rec.start ?? 0, buffer.duration - 0.5))
+    const end = Math.max(start + 0.5, Math.min(rec.end ?? buffer.duration, buffer.duration))
+    const entry = { buffer, start, end }
+    this.bufferCache.set(id, entry)
+    return entry
+  }
+
+  /** Decode a device sound ahead of time (e.g. when an alarm is set) so it rings instantly. */
+  warm(sound: string | undefined) {
+    if (isCustomSound(sound)) void this.loadBuffer(sound.slice(CUSTOM_PREFIX.length)).catch(() => undefined)
   }
 
   private async startCustom(id: string) {
     try {
-      const buffer = await this.loadBuffer(id)
+      const entry = await this.loadBuffer(id)
+      if (!entry) {
+        this.customFailed = true
+        return
+      }
       // still ringing with this sound?
-      if (!buffer || this.timer === null || this.customId !== id || !this.ctx || !this.master) return
+      if (this.timer === null || this.customId !== id || !this.ctx || !this.master) return
       const src = this.ctx.createBufferSource()
-      src.buffer = buffer
+      src.buffer = entry.buffer
       src.loop = true
+      src.loopStart = entry.start
+      src.loopEnd = entry.end
       src.connect(this.master)
-      src.start()
+      src.start(this.ctx.currentTime + 0.02, entry.start)
       this.customSource = src
     } catch {
-      // unreadable file → fall back to the built-in ringtone so the alarm never goes silent
-      this.customId = null
+      // unreadable file → the built-in beep covers so the alarm never goes silent
+      this.customFailed = true
     }
   }
 
@@ -124,16 +146,18 @@ class AlarmSound {
 
     if (isCustomSound(id)) {
       void this.loadBuffer(id.slice(CUSTOM_PREFIX.length))
-        .then((buffer) => {
-          if (!buffer || this.previewOut !== out) return
+        .then((entry) => {
+          if (!entry || this.previewOut !== out) return
+          const length = Math.min(30, entry.end - entry.start)
           const src = ctx.createBufferSource()
-          src.buffer = buffer
+          src.buffer = entry.buffer
           src.connect(out)
-          src.start(ctx.currentTime + 0.05, 0, Math.min(5, buffer.duration))
+          src.start(ctx.currentTime + 0.05, entry.start, length)
           this.previewSource = src
+          if (this.previewTimer !== null) window.clearTimeout(this.previewTimer)
+          this.previewTimer = window.setTimeout(() => this.stopPreview(), (length + 0.4) * 1000)
         })
         .catch(() => undefined)
-      this.previewTimer = window.setTimeout(() => this.stopPreview(), 5500)
       return
     }
 
@@ -157,6 +181,31 @@ class AlarmSound {
     this.previewOut = null
   }
 
+  /** Play part of an already-decoded buffer (used by the trimmer). Returns a stop function. */
+  previewBuffer(buffer: AudioBuffer, start: number, end: number) {
+    this.unlock()
+    const { ctx, previewGain } = this
+    if (!ctx || !previewGain || this.timer !== null) return () => undefined
+    this.stopPreview()
+    const out = ctx.createGain()
+    out.connect(previewGain)
+    this.previewOut = out
+    const length = Math.max(0.2, Math.min(60, end - start))
+    const src = ctx.createBufferSource()
+    src.buffer = buffer
+    src.connect(out)
+    src.start(ctx.currentTime + 0.03, start, length)
+    this.previewSource = src
+    this.previewTimer = window.setTimeout(() => this.stopPreview(), (length + 0.3) * 1000)
+    return () => this.stopPreview()
+  }
+
+  /** The shared AudioContext (created on first use). */
+  context() {
+    this.unlock()
+    return this.ctx
+  }
+
   /** Forget a decoded device sound (after it's deleted). */
   forget(id: string) {
     this.bufferCache.delete(id)
@@ -175,8 +224,9 @@ class AlarmSound {
 
     const horizon = ctx.currentTime + 0.6
     // Device sound loops on its own; until it's decoded (or if it fails), the classic beep covers.
+    const waitingForCustom = Boolean(this.customId && !this.customSource && !this.customFailed && Date.now() - this.customRequestedAt < 4000)
     const customPlaying = Boolean(this.customId && this.customSource)
-    if (!customPlaying) {
+    if (!customPlaying && !waitingForCustom) {
       const tone = this.customId ? RINGTONE_MAP.classic : ringtoneFor(this.ringtone)
       if (this.nextLoop < ctx.currentTime) this.nextLoop = ctx.currentTime + 0.05
       while (this.nextLoop < horizon) {

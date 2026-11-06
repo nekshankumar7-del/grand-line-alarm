@@ -3,7 +3,8 @@ import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { alarmSound, CUSTOM_PREFIX } from '@/audio/alarmSound'
 import { ringtonesFor } from '@/audio/ringtones'
-import { db } from '@/db/db'
+import { db, soundBytes } from '@/db/db'
+import { SoundTrimmer } from './SoundTrimmer'
 import { cn } from '@/lib/cn'
 import { spring } from '@/motion/tokens'
 
@@ -36,6 +37,8 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const custom = useLiveQuery(() => db.sounds.orderBy('createdAt').reverse().toArray(), [])
+  /** Trimmer state: a new file being added, or an existing sound being re-trimmed. */
+  const [trim, setTrim] = useState<{ id?: string; name: string; bytes: ArrayBuffer; mime: string; buffer: AudioBuffer; initial?: { start: number; end: number } } | null>(null)
 
   useEffect(() => {
     if (!playing) return
@@ -64,19 +67,50 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
     }
     setBusy(true)
     try {
-      // Make sure it actually decodes before saving it as an alarm sound.
-      const ctx = new AudioContext()
-      await ctx.decodeAudioData(await file.arrayBuffer())
-      void ctx.close()
-      const id = crypto.randomUUID()
-      await db.sounds.put({ id, name: file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'My sound', blob: file, createdAt: Date.now() })
-      pick(`${CUSTOM_PREFIX}${id}`)
+      const bytes = await file.arrayBuffer()
+      const ctx = alarmSound.context()
+      if (!ctx) throw new Error('no audio')
+      // decodeAudioData detaches its input, so decode a copy and keep the original bytes to store.
+      const buffer = await ctx.decodeAudioData(bytes.slice(0))
+      setTrim({ name: file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'My sound', bytes, mime: file.type || 'audio/mpeg', buffer })
     } catch {
       setError('This audio format can’t be played on this device. Try an MP3 or M4A file.')
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  async function openTrim(id: string) {
+    const rec = await db.sounds.get(id)
+    const ctx = alarmSound.context()
+    const bytes = rec ? await soundBytes(rec) : null
+    if (!rec || !ctx || !bytes) return
+    try {
+      const buffer = await ctx.decodeAudioData(bytes.slice(0))
+      setTrim({ id, name: rec.name, bytes, mime: rec.mime ?? 'audio/mpeg', buffer, initial: { start: rec.start ?? 0, end: rec.end ?? Math.min(buffer.duration, 30) } })
+    } catch {
+      setError('This sound can’t be opened any more. Delete it and add it again.')
+    }
+  }
+
+  async function saveTrim(sel: { start: number; end: number; name: string }) {
+    if (!trim) return
+    const id = trim.id ?? crypto.randomUUID()
+    const existing = trim.id ? await db.sounds.get(trim.id) : undefined
+    await db.sounds.put({
+      id,
+      name: sel.name,
+      data: trim.bytes,
+      mime: trim.mime,
+      duration: trim.buffer.duration,
+      start: sel.start,
+      end: sel.end,
+      createdAt: existing?.createdAt ?? Date.now(),
+    })
+    alarmSound.forget(id)
+    setTrim(null)
+    pick(`${CUSTOM_PREFIX}${id}`)
   }
 
   async function remove(id: string) {
@@ -135,10 +169,20 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
                   <button type="button" role="radio" aria-checked={selected} onClick={() => pick(id)} className={cn(card(selected), 'flex min-w-0 flex-1 items-center gap-2 py-2')}>
                     {selected && <motion.span layoutId="sound-pick" transition={spring.snappy} className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-200" />}
                     <span className="relative text-xl">🎵</span>
-                    <span className="relative min-w-0 flex-1 truncate font-bold">{s.name}</span>
+                    <span className="relative min-w-0 flex-1">
+                      <span className="block truncate font-bold">{s.name}</span>
+                      {s.end !== undefined && (
+                        <span className={cn('block text-[11px]', selected ? 'text-black/60' : 'text-white/55')}>
+                          plays {Math.floor((s.start ?? 0) / 60)}:{String(Math.floor((s.start ?? 0) % 60)).padStart(2, '0')}–{Math.floor(s.end / 60)}:{String(Math.floor(s.end % 60)).padStart(2, '0')}
+                        </span>
+                      )}
+                    </span>
                     <span className="relative">
                       <Equalizer playing={playing === id} />
                     </span>
+                  </button>
+                  <button type="button" onClick={() => void openTrim(s.id)} aria-label={`Choose the part of ${s.name}`} className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-lg">
+                    ✂️
                   </button>
                   <button type="button" onClick={() => void remove(s.id)} aria-label={`Delete ${s.name}`} className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-lg">
                     🗑
@@ -148,9 +192,10 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
             })}
           </ul>
         ) : (
-          <p className="mt-2 text-xs text-white/60">Pick any song or tone from your phone (MP3, M4A, WAV…). It stays on this device.</p>
+          <p className="mt-2 text-xs text-white/60">Pick any song or tone from your phone (MP3, M4A, WAV…), then choose the part to play. It stays on this device.</p>
         )}
       </div>
+      <SoundTrimmer open={trim !== null} name={trim?.name ?? ''} buffer={trim?.buffer ?? null} initial={trim?.initial} onSave={(sel) => void saveTrim(sel)} onClose={() => setTrim(null)} />
     </div>
   )
 }

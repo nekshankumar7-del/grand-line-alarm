@@ -38,6 +38,14 @@ export function useAlarmEngine() {
   const { pathname } = useLocation()
   const active = useActiveAlarm()
 
+  // Pre-decode device sounds of enabled alarms so they ring instantly (no fallback beep).
+  useEffect(() => {
+    void db.alarms
+      .filter((a) => a.enabled)
+      .toArray()
+      .then((list) => list.forEach((a) => alarmSound.warm(a.sound)))
+  }, [])
+
   // Scheduler: check every second, and immediately when the tab wakes up.
   useEffect(() => {
     let busy = false
