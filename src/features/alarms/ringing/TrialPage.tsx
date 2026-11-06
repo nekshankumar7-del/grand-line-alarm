@@ -13,6 +13,7 @@ import { IdentityCheck } from '@/features/faceid/IdentityCheck'
 import { useProfile } from '@/features/faceid/useProfile'
 import { MISSIONS } from '@/features/missions/registry'
 import { useWakeLock } from '@/hooks/useWakeLock'
+import { exitStrictFullscreen, useStrictLock } from '../useStrictLock'
 import { spring } from '@/motion/tokens'
 import { completeMission, finishAlarm, markIdentityVerified, swapForFallback } from '../actions'
 import { useActiveAlarm } from '../useActiveAlarm'
@@ -34,6 +35,7 @@ export function TrialPage() {
   const idleTimer = useRef<number | null>(null)
   const finishing = useRef(false)
   useWakeLock(true)
+  const escapes = useStrictLock(true)
 
   // Alarm dips while you're making progress; comes back to full after 10s idle.
   const markActivity = useCallback(() => {
@@ -61,6 +63,7 @@ export function TrialPage() {
     if (finishing.current) return
     finishing.current = true
     const record = await finishAlarm()
+    exitStrictFullscreen()
     navigate('/app/victory', { replace: true, state: record })
   }, [navigate])
 
@@ -110,6 +113,17 @@ export function TrialPage() {
 
   return (
     <main className="relative min-h-dvh overflow-hidden px-4 pb-10">
+      {escapes > 0 && (
+        <motion.div
+          key={escapes}
+          role="alert"
+          initial={{ y: -60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[65] mx-auto max-w-md rounded-xl border border-red-400/60 bg-red-700/90 px-4 py-2 text-center text-sm font-bold text-white shadow-xl"
+        >
+          🚫 No escape — finish every mission to stop the alarm.
+        </motion.div>
+      )}
       <AuroraBackdrop intensity={0.45} />
       <div className="relative z-10 mx-auto flex max-w-md flex-col items-center gap-4 pt-4">
         <div className="glass flex w-full items-center gap-3 rounded-[1.75rem] p-2 pr-4">

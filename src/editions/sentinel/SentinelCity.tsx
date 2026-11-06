@@ -134,8 +134,11 @@ export function SentinelCity() {
     return () => window.clearTimeout(id)
   }, [mood, reduce])
 
+  const dawn = mood === 'dawn'
   const sky =
-    mood === 'neon'
+    dawn
+      ? 'linear-gradient(to bottom, #1e3a8a 0%, #6d28d9 28%, #db2777 52%, #f97316 72%, #fcd34d 92%)'
+      : mood === 'neon'
       ? 'linear-gradient(to bottom, #12021f 0%, #3b0a6b 40%, #7e22ce 70%, #db2777 92%)'
       : mood === 'downpour'
         ? 'linear-gradient(to bottom, #0b0f19 0%, #1f2937 50%, #374151 85%)'
@@ -143,8 +146,31 @@ export function SentinelCity() {
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden" style={{ background: sky }}>
+      {/* rising sun (dawn) */}
+      {dawn && (
+        <>
+          <motion.div
+            className="absolute bottom-[34%] left-1/2 size-56 -translate-x-1/2 rounded-full md:size-80"
+            style={{ background: 'radial-gradient(circle at 50% 45%, #fffbeb, #fde68a 45%, #f97316 80%)', boxShadow: '0 0 140px 70px rgb(251 146 60 / 0.55)' }}
+            initial={{ y: 60 }}
+            animate={reduce ? { y: 0 } : { y: [40, 0, 40] }}
+            transition={{ duration: 40, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          {!reduce &&
+            Array.from({ length: 12 }, (_, i) => (
+              <motion.span
+                key={i}
+                className="absolute bottom-[40%] left-1/2 h-[60vh] w-1 origin-bottom rounded-full bg-gradient-to-t from-amber-200/40 to-transparent"
+                style={{ rotate: -70 + i * 12.7 }}
+                animate={{ opacity: [0.15, 0.5, 0.15] }}
+                transition={{ duration: 4, repeat: Infinity, delay: i * 0.25 }}
+              />
+            ))}
+        </>
+      )}
+
       {/* moon */}
-      {mood !== 'downpour' && (
+      {mood !== 'downpour' && !dawn && (
         <motion.div
           className="absolute right-[10%] top-[8%] size-28 rounded-full md:size-40"
           style={{ background: 'radial-gradient(circle at 35% 35%, #fffef2, #fde68a 60%, #d4b968)', boxShadow: `0 0 90px 30px ${mood === 'neon' ? 'rgb(244 114 182 / 0.45)' : 'rgb(254 243 199 / 0.45)'}` }}
@@ -168,13 +194,13 @@ export function SentinelCity() {
 
 
       <div className="absolute inset-x-0 bottom-0 h-[62vh]">
-        <Row buildings={FAR} color={mood === 'neon' ? '#2e1065' : '#1e293b'} windowColor={mood === 'neon' ? '#f0abfc' : '#fde68a'} litRatio={0.12} seed={3} />
+        <Row buildings={FAR} color={dawn ? '#4c1d95' : mood === 'neon' ? '#2e1065' : '#1e293b'} windowColor={mood === 'neon' ? '#f0abfc' : '#fde68a'} litRatio={dawn ? 0.03 : 0.12} seed={3} />
       </div>
       <div className="absolute inset-x-0 bottom-0 h-[48vh]">
-        <Row buildings={MID} color={mood === 'neon' ? '#1e0b3a' : '#111827'} windowColor="#fcd34d" litRatio={0.2} seed={7} neon={mood === 'neon'} />
+        <Row buildings={MID} color={dawn ? '#2e1065' : mood === 'neon' ? '#1e0b3a' : '#111827'} windowColor="#fcd34d" litRatio={dawn ? 0.06 : 0.2} seed={7} neon={mood === 'neon'} />
       </div>
       <div className="absolute inset-x-0 bottom-0 h-[30vh]">
-        <Row buildings={NEAR} color="#05060b" windowColor="#fbbf24" litRatio={0.28} seed={11} neon={mood === 'neon'} />
+        <Row buildings={NEAR} color={dawn ? '#1a0b2e' : '#05060b'} windowColor="#fbbf24" litRatio={dawn ? 0.1 : 0.28} seed={11} neon={mood === 'neon'} />
       </div>
 
       {/* rooftop foreground with water tower + antenna */}

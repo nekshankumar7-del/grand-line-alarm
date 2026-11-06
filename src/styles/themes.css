@@ -10,6 +10,15 @@
   --c-sun: #fef3c7;
 }
 
+[data-theme='dawn'] {
+  --c-sky: #9d4edd;
+  --c-sky-deep: #1e3a8a;
+  --c-sea: #312e81;
+  --c-sea-deep: #1e1b4b;
+  --c-foam: #fed7aa;
+  --c-sun: #fcd34d;
+}
+
 [data-theme='downpour'] {
   --c-sky: #374151;
   --c-sky-deep: #111827;

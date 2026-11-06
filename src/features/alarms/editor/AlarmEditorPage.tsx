@@ -19,7 +19,7 @@ import { BackupCodeSheet } from './BackupCodeSheet'
 import { DayPicker } from './DayPicker'
 import { MissionBuilder } from './MissionBuilder'
 import { SoundPicker } from './SoundPicker'
-import { TimeDial } from './TimeDial'
+import { WheelTimePicker } from './WheelTimePicker'
 
 function Section({ step, icon, title, children }: { step: number; icon: string; title: string; children: ReactNode }) {
   return (
@@ -130,7 +130,7 @@ export function AlarmEditorPage() {
         </motion.header>
 
         <Section step={1} icon="⏰" title="Wake-up time">
-          <TimeDial hour={draft.hour} minute={draft.minute} onChange={(hour, minute) => update({ hour, minute })} />
+          <WheelTimePicker hour={draft.hour} minute={draft.minute} onChange={(hour, minute) => update({ hour, minute })} />
         </Section>
 
         <Section step={2} icon="📅" title="Repeat">

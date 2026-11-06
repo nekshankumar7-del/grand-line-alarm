@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Sheet } from '@/components/ui/Sheet'
 import { normalizeCode, useSettingsStore } from '@/store/settingsStore'
 import { emergencyExit } from '../actions'
+import { exitStrictFullscreen } from '../useStrictLock'
 
 /** Hidden "I'm sick / emergency" escape hatch — needs the 30-char code so the app is never a real trap. */
 export function EmergencyExit() {
@@ -17,6 +18,7 @@ export function EmergencyExit() {
     e.preventDefault()
     if (backupCode && normalizeCode(input) === normalizeCode(backupCode)) {
       await emergencyExit()
+      exitStrictFullscreen()
       navigate('/app', { replace: true })
     } else {
       setError(true)

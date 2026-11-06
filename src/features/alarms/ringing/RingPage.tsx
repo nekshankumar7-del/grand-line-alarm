@@ -17,6 +17,7 @@ import { SpeechBubble } from '@/features/hero/SpeechBubble'
 import { MISSIONS } from '@/features/missions/registry'
 import { useTicker } from '@/hooks/useTicker'
 import { useWakeLock } from '@/hooks/useWakeLock'
+import { useStrictLock } from '../useStrictLock'
 import { gsapEase } from '@/motion/tokens'
 import { startTrials } from '../actions'
 import { formatTime } from '../format'
@@ -35,6 +36,7 @@ export function RingPage() {
   const tick = useTicker(1000)
   const root = useRef<HTMLDivElement>(null)
   useWakeLock(true)
+  const escapes = useStrictLock(true)
 
   useEffect(() => {
     if (active === null) navigate('/app', { replace: true })
@@ -74,6 +76,17 @@ export function RingPage() {
 
   return (
     <main ref={root} className="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_50%_30%,#3b0764,#0b1026_55%,#020617)] text-center">
+      {escapes > 0 && (
+        <motion.div
+          key={escapes}
+          role="alert"
+          initial={{ y: -60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[65] mx-auto max-w-md rounded-xl border border-red-400/60 bg-red-700/90 px-4 py-2 text-center text-sm font-bold text-white shadow-xl"
+        >
+          🚫 No escape — finish every mission to stop the alarm.
+        </motion.div>
+      )}
       {<SentinelEmblem color="#facc15" className="raid-pulse pointer-events-none absolute left-1/2 top-[18%] size-[60vmin] -translate-x-1/2 opacity-20" />}
       <div className="raid-pulse pointer-events-none absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgb(0_0_0/0.6))] opacity-40" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgb(0_0_0/0.18)_1.5px,transparent_1.5px)] [background-size:10px_10px]" />

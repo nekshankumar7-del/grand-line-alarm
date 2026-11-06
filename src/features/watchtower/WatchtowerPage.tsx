@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { speak } from '@/audio/voice'
 import { CaseFile } from '@/components/ui/CaseFile'
 import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher'
@@ -47,7 +47,16 @@ export function WatchtowerPage() {
   const alarms = useLiveQuery(() => db.alarms.toArray().then((list) => list.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))), [])
   const profile = useProfile()
   const { bounty, streak, name, title } = usePlayerStore()
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const [profileOpen, setProfileOpenState] = useState(params.get('profile') === '1')
+  useEffect(() => {
+    if (params.get('profile') === '1') setProfileOpenState(true)
+  }, [params])
+  const setProfileOpen = (open: boolean) => {
+    setProfileOpenState(open)
+    if (!open && params.get('profile')) navigate('/app', { replace: true })
+  }
   const [zoomOpen, setZoomOpen] = useState(false)
   const rank = rankFor('sentinel', bounty)
   const nextRank = nextRankFor('sentinel', bounty)
@@ -84,7 +93,7 @@ export function WatchtowerPage() {
       <AvatarLightbox open={zoomOpen} onClose={() => setZoomOpen(false)} />
 
       <motion.div
-        className="relative z-10 mx-auto flex max-w-md flex-col gap-5 px-4 pb-40 pt-6 lg:grid lg:h-dvh lg:max-w-[100rem] lg:grid-cols-[15rem_minmax(0,1fr)_21rem] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-5 lg:px-8 lg:pb-10 lg:pt-6 xl:grid-cols-[16rem_minmax(0,1fr)_24rem]"
+        className="relative z-10 mx-auto flex max-w-md flex-col gap-5 px-4 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))] lg:grid lg:h-dvh lg:max-w-[100rem] lg:grid-cols-[15rem_minmax(0,1fr)_21rem] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-5 lg:px-8 lg:pb-10 lg:pt-6 xl:grid-cols-[16rem_minmax(0,1fr)_24rem]"
         variants={staggerContainer(0.08, 0.1)}
         initial="hidden"
         animate="show"
@@ -107,8 +116,30 @@ export function WatchtowerPage() {
           <ThemeSwitcher />
         </motion.header>
 
-        {/* LEFT: case file */}
-        <div className="flex flex-col items-center gap-4 lg:min-h-0 lg:items-stretch">
+        {/* MOBILE: compact profile strip */}
+        <motion.button
+          type="button"
+          variants={fadeUp}
+          onClick={() => setProfileOpen(true)}
+          className="glass flex w-full items-center gap-3 rounded-2xl p-3 text-left lg:hidden"
+          aria-label="Open your case file"
+        >
+          <PlayerAvatar aura={false} className="size-14 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-2xl leading-none tracking-wide">{name || 'Sentinel'}</p>
+            <p className="truncate text-xs font-bold uppercase tracking-widest text-amber-400">{title} · {rank.title}</p>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-red-500" style={{ width: `${rankProgress * 100}%` }} />
+            </div>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="font-display text-2xl leading-none tabular-nums">{bounty.toLocaleString()}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">REP · 🔦 {streak}</p>
+          </div>
+        </motion.button>
+
+        {/* LEFT: case file (desktop) */}
+        <div className="hidden flex-col items-center gap-4 lg:flex lg:min-h-0 lg:items-stretch">
           <motion.div variants={popIn} className="relative self-center">
             <CaseFile name={name || 'Sentinel'} reputation={bounty} title={title} subtitle={`Rank · ${rank.title}`} portrait={portrait} className="w-52 lg:w-full" />
             <motion.button
@@ -156,6 +187,21 @@ export function WatchtowerPage() {
           <motion.div variants={fadeUp}>
             <NextAlarmHero next={next} onBedside={() => setBedside(true)} />
           </motion.div>
+          {next && next.at.getTime() - Date.now() < 12 * 3600_000 && (
+            <motion.button
+              type="button"
+              variants={fadeUp}
+              onClick={() => setBedside(true)}
+              className="flex w-full items-center gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3 text-left lg:hidden"
+            >
+              <span className="text-2xl">🌙</span>
+              <span className="min-w-0 flex-1 text-sm">
+                <b className="block text-amber-300">Going to sleep? Turn on Bedside mode</b>
+                <span className="text-white/70">Keep the app open and charging so the alarm can ring on time.</span>
+              </span>
+              <span className="text-amber-300">›</span>
+            </motion.button>
+          )}
           {alarms && alarms.length > 0 && (
             <motion.section variants={fadeUp} className="flex min-h-0 flex-col">
               <div className="mb-2 flex items-center justify-between px-1">
@@ -199,12 +245,6 @@ export function WatchtowerPage() {
         </div>
       </motion.div>
 
-      {/* floating action button (mobile) */}
-      <motion.div className="fixed bottom-6 left-5 z-30 lg:hidden" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.8, type: 'spring', stiffness: 260, damping: 14 }}>
-        <Link to="/app/alarms/new" aria-label="New alarm" className="glow-ring grid size-16 place-items-center rounded-full border border-amber-300 bg-gradient-to-br from-amber-400 to-red-600 text-4xl font-bold text-black shadow-xl">
-          +
-        </Link>
-      </motion.div>
 
       <AnimatePresence>
         {deleted && (

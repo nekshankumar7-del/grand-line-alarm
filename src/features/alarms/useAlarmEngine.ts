@@ -9,6 +9,7 @@ import type { ActiveAlarm } from './types'
 import { useActiveAlarm } from './useActiveAlarm'
 
 const LOCKED_ROUTES = ['/app/ring', '/app/trial', '/app/victory']
+const LATE_FIRE_MS = 3 * 60 * 60_000
 
 async function notifyRinging(active: ActiveAlarm) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
@@ -47,7 +48,9 @@ export function useAlarmEngine() {
         const now = new Date()
         const alarms = await db.alarms.filter((a) => a.enabled).toArray()
         for (const alarm of alarms) {
-          const occ = dueOccurrence(alarm, now)
+          // Phones freeze background web apps, so an alarm that came due while frozen
+          // still fires (strictly) as soon as the app is opened — up to 3 hours late.
+          const occ = dueOccurrence(alarm, now, LATE_FIRE_MS)
           if (occ) await fireAlarm(alarm, occ)
         }
       } finally {
@@ -57,9 +60,13 @@ export function useAlarmEngine() {
     void check()
     const id = window.setInterval(check, 1000)
     document.addEventListener('visibilitychange', check)
+    window.addEventListener('focus', check)
+    window.addEventListener('pageshow', check)
     return () => {
       window.clearInterval(id)
       document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('focus', check)
+      window.removeEventListener('pageshow', check)
     }
   }, [])
 

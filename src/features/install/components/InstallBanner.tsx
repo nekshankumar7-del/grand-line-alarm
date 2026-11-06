@@ -14,7 +14,7 @@ export function InstallBanner() {
       {visible && (
         <motion.aside
           aria-label="Install app"
-          className="paper-grain fixed inset-x-3 bottom-24 z-40 mx-auto flex max-w-sm items-center gap-3 rounded-2xl border-[3px] border-ink p-3 text-ink hard-shadow lg:inset-x-auto lg:bottom-6 lg:left-6 lg:mx-0"
+          className="paper-grain fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm items-center gap-3 rounded-2xl border-[3px] border-ink p-3 text-ink hard-shadow lg:inset-x-auto lg:bottom-6 lg:left-6 lg:mx-0"
           initial={{ y: 160, rotate: -2 }}
           animate={{ y: 0, rotate: 0 }}
           exit={{ y: 160, opacity: 0 }}
