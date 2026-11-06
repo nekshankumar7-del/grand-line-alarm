@@ -1,17 +1,23 @@
 import { createBrowserRouter, Navigate } from 'react-router'
+import { RingPage } from '@/features/alarms/ringing/RingPage'
+import { TrialPage } from '@/features/alarms/ringing/TrialPage'
+import { VictoryPage } from '@/features/alarms/ringing/VictoryPage'
 import { LandingPage } from '@/features/site/LandingPage'
+import { RouteError } from './RouteError'
 import { AppLayout } from './layouts/AppLayout'
 import { RootLayout } from './layouts/RootLayout'
 
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <RouteError />,
     children: [
       { path: '/', element: <LandingPage /> },
-      // Full-screen alarm flow (no install banner).
-      { path: '/app/ring', lazy: async () => ({ Component: (await import('@/features/alarms/ringing/RingPage')).RingPage }) },
-      { path: '/app/trial', lazy: async () => ({ Component: (await import('@/features/alarms/ringing/TrialPage')).TrialPage }) },
-      { path: '/app/victory', lazy: async () => ({ Component: (await import('@/features/alarms/ringing/VictoryPage')).VictoryPage }) },
+      // Full-screen alarm flow — bundled (not lazy) so finishing an alarm never needs a download,
+      // even right after a new deployment removed older code-split files.
+      { path: '/app/ring', element: <RingPage /> },
+      { path: '/app/trial', element: <TrialPage /> },
+      { path: '/app/victory', element: <VictoryPage /> },
       {
         path: '/app',
         element: <AppLayout />,
