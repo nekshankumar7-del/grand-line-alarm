@@ -55,10 +55,10 @@ export function LandingPage() {
 
       {/* nav */}
       <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
+          <Link to="/" className="flex min-w-0 items-center gap-2">
             <SentinelEmblem color="#f59e0b" className="size-8" />
-            <span className="font-display text-2xl tracking-[0.12em]">{APP.appName}</span>
+            <span className="truncate font-display text-xl tracking-[0.1em] sm:text-2xl">{APP.appName}</span>
           </Link>
           <div className="flex items-center gap-2">
             <a href="#missions" className="hidden px-3 text-sm font-bold text-white/80 hover:text-white sm:block">

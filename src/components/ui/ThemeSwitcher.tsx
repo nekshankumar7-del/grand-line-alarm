@@ -35,12 +35,12 @@ export function ThemeSwitcher({ className }: { className?: string }) {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         whileTap={{ scale: 0.92 }}
-        className="glass flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4"
+        className="glass flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3 sm:pr-4"
       >
         <span className="grid size-9 place-items-center rounded-full border-2 border-white/60 text-lg" style={{ background: current.preview }}>
           {current.icon}
         </span>
-        <span className="font-display text-lg tracking-wide">{current.label}</span>
+        <span className="hidden font-display text-lg tracking-wide sm:inline">{current.label}</span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} className="text-xs">
           ▼
         </motion.span>
@@ -55,7 +55,7 @@ export function ThemeSwitcher({ className }: { className?: string }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={spring.snappy}
-            className="glass absolute right-0 top-full z-50 mt-2 grid w-[19rem] grid-cols-2 gap-2 rounded-3xl bg-sea-deep/70 p-3"
+            className="glass absolute right-0 top-full z-50 mt-2 grid w-[min(19rem,calc(100vw-2rem))] grid-cols-2 gap-2 rounded-3xl bg-sea-deep/70 p-3"
           >
             {list.map((t, i) => {
               const selected = t.id === theme

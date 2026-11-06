@@ -23,11 +23,21 @@
   html {
     color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
+    /* Mobile browsers widen the layout to fit anything that pokes past the edge (and then
+       show the page zoomed out). Clip horizontal overflow at the root so the app is always
+       exactly screen-width. `clip` (unlike `hidden`) doesn't break position: sticky. */
+    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     min-height: 100dvh;
+    max-width: 100%;
     overflow-x: hidden;
+    overflow-x: clip;
     background: var(--c-sea-deep);
     color: white;
     font-family: var(--font-body);
@@ -107,4 +117,28 @@
 /* ---------- Night Sentinel typography ---------- */
 :root {
   --app-font-display: 'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif;
+}
+
+/* ---------- mobile fit ---------- */
+#root {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+/* iOS zooms the page when focusing a field with text smaller than 16px — keep fields at 16px+. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Long words/labels should wrap instead of pushing the layout wider. */
+p,
+h1,
+h2,
+h3,
+li {
+  overflow-wrap: anywhere;
 }

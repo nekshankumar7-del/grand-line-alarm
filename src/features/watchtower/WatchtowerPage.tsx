@@ -89,11 +89,11 @@ export function WatchtowerPage() {
         initial="hidden"
         animate="show"
       >
-        <motion.header variants={fadeUp} className="flex w-full items-center justify-between gap-3 lg:col-span-3">
-          <div className="flex items-center gap-3">
+        <motion.header variants={fadeUp} className="flex w-full min-w-0 items-center justify-between gap-3 lg:col-span-3">
+          <div className="flex min-w-0 items-center gap-3">
             <motion.span
               aria-hidden
-              className="grid size-12 place-items-center rounded-xl border border-amber-500/60 bg-black/50 shadow-[0_0_24px_rgba(245,158,11,0.35)]"
+              className="grid size-11 shrink-0 place-items-center rounded-xl border border-amber-500/60 bg-black/50 shadow-[0_0_24px_rgba(245,158,11,0.35)]"
               animate={{ boxShadow: ['0 0 12px rgba(245,158,11,0.25)', '0 0 28px rgba(245,158,11,0.6)', '0 0 12px rgba(245,158,11,0.25)'] }}
               transition={{ duration: 3, repeat: Infinity }}
             >
@@ -101,7 +101,7 @@ export function WatchtowerPage() {
             </motion.span>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-400/90">{greeting()}</p>
-              <h1 className="font-display text-5xl leading-none tracking-[0.08em] text-white manga-shadow">{APP.home}</h1>
+              <h1 className="truncate font-display text-4xl leading-none tracking-[0.06em] text-white manga-shadow sm:text-5xl">{APP.home}</h1>
             </div>
           </div>
           <ThemeSwitcher />
