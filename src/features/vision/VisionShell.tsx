@@ -67,7 +67,7 @@ export function VisionShell<Model>({ load, onFrame, badge, overlay, subject = 'y
   const identityRef = useRef(identity)
   identityRef.current = identity
 
-  const status = useVisionLoop(videoRef, camera === 'live', load, (model, video, info) => {
+  const { status, retry } = useVisionLoop(videoRef, camera === 'live', load, (model, video, info) => {
     const st = s.current
     if (st.done) return
     const canvas = canvasRef.current
@@ -132,7 +132,7 @@ export function VisionShell<Model>({ load, onFrame, badge, overlay, subject = 'y
     )
   }
 
-  const loading = camera === 'starting' || status === 'loading'
+  const loading = camera === 'starting' || status === 'loading' || status === 'slow'
   const stranger = identity === 'stranger'
   const reading = !loading && detected && !stranger
   const idInfo = checkIdentity ? ID_TEXT[identity] : null
@@ -192,8 +192,20 @@ export function VisionShell<Model>({ load, onFrame, badge, overlay, subject = 'y
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 grid place-items-center bg-black/85 text-center">
               <div>
                 <motion.div className="mx-auto size-14 rounded-full border-4 border-amber-400 border-t-transparent" animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }} />
-                <p className="mt-3 font-display text-2xl tracking-wide">Calibrating the scanner…</p>
-                <p className="text-xs text-white/60">First time can take a few seconds on phones</p>
+                <p className="mt-3 font-display text-2xl tracking-wide">{camera === 'starting' ? 'Opening the camera…' : 'Calibrating the scanner…'}</p>
+                <p className="px-6 text-xs text-white/60">{status === 'slow' ? 'Still downloading the on-device scanner (~18 MB, first time only). Keep the app open on Wi-Fi.' : 'First time can take a few seconds on phones'}</p>
+                {status === 'slow' && (
+                  <div className="pointer-events-auto mt-3 flex justify-center gap-2">
+                    <button type="button" onClick={retry} className="rounded-full bg-amber-400 px-4 py-1.5 text-sm font-bold text-black">
+                      ↻ Retry
+                    </button>
+                    {onUnavailable && (
+                      <button type="button" onClick={() => onUnavailable('Scanner took too long to load')} className="rounded-full border border-white/40 px-4 py-1.5 text-sm font-bold">
+                        Swap for ciphers
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
