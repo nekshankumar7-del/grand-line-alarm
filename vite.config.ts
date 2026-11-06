@@ -1,5 +1,6 @@
-import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -8,14 +9,26 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { manifest } from './pwa.manifest'
 
 const APP_VERSION: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
+/**
+ * Build id = fingerprint of the app's own code (src/, index.html, public/, package.json).
+ * It only changes when the app really changes — so the in-app "Update available" prompt never
+ * appears for commits that don't touch the app (docs, CI, etc.).
+ */
 const BUILD_ID = (() => {
-  const fromCi = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA
-  if (fromCi) return fromCi.slice(0, 7)
-  try {
-    return execSync('git rev-parse --short HEAD').toString().trim()
-  } catch {
-    return Date.now().toString(36)
+  const hash = createHash('sha256')
+  const root = fileURLToPath(new URL('.', import.meta.url))
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir).sort()) {
+      if (name === 'mediapipe' || name === 'face-api') continue // generated copies
+      const path = join(dir, name)
+      if (statSync(path).isDirectory()) walk(path)
+      // machine-independent path (same id on this PC and on Vercel)
+      else hash.update(relative(root, path).split(sep).join('/')).update(readFileSync(path))
+    }
   }
+  for (const dir of ['src', 'public']) walk(join(root, dir))
+  for (const file of ['index.html', 'package.json', 'pwa.manifest.ts']) hash.update(readFileSync(join(root, file)))
+  return hash.digest('hex').slice(0, 7)
 })()
 const BUILD_TIME = new Date().toISOString()
 

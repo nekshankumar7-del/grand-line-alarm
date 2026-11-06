@@ -1,8 +1,7 @@
 name: Android APK
 
+# Manual only (Actions → Android APK → Run workflow). The app ships as a PWA.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
