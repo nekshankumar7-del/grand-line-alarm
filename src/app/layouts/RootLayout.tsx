@@ -1,28 +1,24 @@
-import { AnimatePresence, motion } from 'motion/react'
-import { useState } from 'react'
-import { useLocation, useOutlet } from 'react-router'
+import { motion } from 'motion/react'
+import { Outlet, useLocation } from 'react-router'
 import { WaveWipe } from '@/components/effects/WaveWipe'
 import { useAlarmEngine } from '@/features/alarms/useAlarmEngine'
 import { InstallCelebration } from '@/features/install'
-import { pageTransition } from '@/motion/variants'
+import { duration, ease } from '@/motion/tokens'
 
-function FrozenOutlet() {
-  const outlet = useOutlet()
-  const [frozen] = useState(outlet)
-  return frozen
-}
-
+/**
+ * Page transitions are enter-only: the new page renders immediately and fades in.
+ * (The previous "wait for the old page's exit animation" mode could stall on phones —
+ * e.g. quick double taps or paused animations — leaving taps on a dead page until refresh.)
+ */
 export function RootLayout() {
   const { pathname } = useLocation()
   useAlarmEngine()
 
   return (
     <>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={pathname} {...pageTransition}>
-          <FrozenOutlet />
-        </motion.div>
-      </AnimatePresence>
+      <motion.div key={pathname} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: duration.base, ease: ease.out }}>
+        <Outlet />
+      </motion.div>
       <WaveWipe routeKey={pathname} />
       <InstallCelebration />
     </>

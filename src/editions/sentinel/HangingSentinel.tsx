@@ -43,6 +43,8 @@ export function HangingSentinel({ id, defaultX = 0.85, className, rope = 220, si
   const [moving, setMoving] = useState(false)
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1024 : window.innerWidth))
   const anchorControls = useDragControls()
+  const heroControls = useDragControls()
+  const [coarse] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches)
 
   // Place the anchor from the saved fraction (or the default) and keep it valid on resize.
   useEffect(() => {
@@ -153,9 +155,11 @@ export function HangingSentinel({ id, defaultX = 0.85, className, rope = 220, si
         <motion.div
           role="img"
           aria-label="The Sentinel hanging on a rope — drag to pull it, release to let it bounce back"
-          className="pointer-events-auto absolute left-0 cursor-grab touch-none select-none active:cursor-grabbing"
+          className={cn('absolute left-0 select-none', coarse ? 'pointer-events-none' : 'pointer-events-auto cursor-grab touch-none active:cursor-grabbing')}
           style={{ x, y, rotate: tilt, top: rope, width: size, height, marginLeft: -size / 2, originX: 0.5, originY: 0 }}
           drag
+          dragListener={!coarse}
+          dragControls={heroControls}
           dragMomentum={false}
           dragElastic={0.9}
           onDragStart={() => {
@@ -166,8 +170,18 @@ export function HangingSentinel({ id, defaultX = 0.85, className, rope = 220, si
             setDragging(false)
             springBack()
           }}
-          whileTap={{ scale: 1.04 }}
+          whileTap={coarse ? undefined : { scale: 1.04 }}
         >
+          {coarse && (
+            <button
+              type="button"
+              aria-label="Grab the Sentinel's rope — drag to pull, release to bounce back"
+              onPointerDown={(e) => heroControls.start(e)}
+              className="pointer-events-auto absolute left-1/2 top-[-6%] z-10 grid size-9 -translate-x-1/2 touch-none place-items-center rounded-full border-2 border-amber-300 bg-black/70 text-xs shadow-[0_0_14px_rgba(245,158,11,0.7)]"
+            >
+              <span aria-hidden>✊</span>
+            </button>
+          )}
           <div className="-mt-[13%] h-full w-full">
             <SentinelHero mood={dragging || moving ? 'angry' : mood} className="h-full w-full drop-shadow-[0_14px_24px_rgba(0,0,0,0.6)]" />
           </div>

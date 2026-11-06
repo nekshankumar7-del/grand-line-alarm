@@ -39,7 +39,8 @@ export function AppLayout() {
   const showTabs = !pathname.startsWith('/app/alarms')
   return (
     <>
-      <InstallBanner />
+      {/* only on the home screen, so it never covers editor/face-ID buttons */}
+      {pathname === '/app' && <InstallBanner />}
       <Outlet />
       {showTabs && <TabBar />}
     </>
