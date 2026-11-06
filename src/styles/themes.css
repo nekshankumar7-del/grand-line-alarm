@@ -1,0 +1,39 @@
+/* Night Sentinel — city moods. */
+
+:root,
+[data-theme='midnight'] {
+  --c-sky: #1e2a5a;
+  --c-sky-deep: #0b1026;
+  --c-sea: #1e293b;
+  --c-sea-deep: #070b18;
+  --c-foam: #cbd5e1;
+  --c-sun: #fef3c7;
+}
+
+[data-theme='downpour'] {
+  --c-sky: #374151;
+  --c-sky-deep: #111827;
+  --c-sea: #1f2937;
+  --c-sea-deep: #05070d;
+  --c-foam: #9ca3af;
+  --c-sun: #e5e7eb;
+}
+
+[data-theme='neon'] {
+  --c-sky: #5b21b6;
+  --c-sky-deep: #1a0533;
+  --c-sea: #312e81;
+  --c-sea-deep: #0f0a1f;
+  --c-foam: #f0abfc;
+  --c-sun: #fde68a;
+}
+
+:root {
+  --c-ink: #05070d;
+  --c-gold: #f59e0b;
+  --c-accent: #ef4444;
+  --c-paper: #e7e2d6;
+  --c-paper-dark: #b8ae98;
+  --c-sand: #d6cfc0;
+  --c-wood: #4b5563;
+}

@@ -1,0 +1,110 @@
+@import 'tailwindcss';
+@import './themes.css';
+
+@theme inline {
+  --color-sky: var(--c-sky);
+  --color-sky-deep: var(--c-sky-deep);
+  --color-sea: var(--c-sea);
+  --color-sea-deep: var(--c-sea-deep);
+  --color-foam: var(--c-foam);
+  --color-sun: var(--c-sun);
+  --color-sand: var(--c-sand);
+  --color-paper: var(--c-paper);
+  --color-paper-dark: var(--c-paper-dark);
+  --color-ink: var(--c-ink);
+  --color-accent: var(--c-accent);
+  --color-gold: var(--c-gold);
+  --color-wood: var(--c-wood);
+  --font-display: var(--app-font-display);
+  --font-body: 'Nunito Variable', system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background: var(--c-sea-deep);
+    color: white;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.4s ease;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--c-gold);
+    outline-offset: 3px;
+  }
+}
+
+@utility text-outline {
+  -webkit-text-stroke: 1px rgb(0 0 0 / 0.6);
+  paint-order: stroke fill;
+}
+
+@utility manga-shadow {
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.6), 0 0 24px rgb(245 158 11 / 0.35);
+}
+
+@utility hard-shadow {
+  box-shadow: 0 6px 0 rgb(0 0 0 / 0.85), 0 10px 30px rgb(0 0 0 / 0.45);
+}
+
+@utility paper-grain {
+  background-color: var(--c-paper);
+  background-image: radial-gradient(rgb(0 0 0 / 0.07) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+@utility glass {
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.05));
+  border: 1.5px solid rgb(255 255 255 / 0.22);
+  box-shadow: 0 20px 50px -20px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+@utility text-shine {
+  background: linear-gradient(110deg, var(--c-gold) 20%, #fff7d6 40%, var(--c-gold) 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 3s linear infinite;
+}
+
+@utility glow-ring {
+  box-shadow: 0 0 0 0 rgb(255 197 61 / 0.7);
+  animation: glow-pulse 2s ease-out infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes glow-pulse {
+  70% {
+    box-shadow: 0 0 0 18px rgb(255 197 61 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(255 197 61 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-shine,
+  .glow-ring {
+    animation: none;
+  }
+}
+
+/* ---------- Night Sentinel typography ---------- */
+:root {
+  --app-font-display: 'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif;
+}
