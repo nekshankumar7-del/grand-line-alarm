@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Sheet } from '@/components/ui/Sheet'
+import { db } from '@/db/db'
 import { APP, rankFor } from '@/editions/editions'
 import { useProfile } from '@/features/faceid/useProfile'
 import { cn } from '@/lib/cn'
@@ -8,7 +9,52 @@ import { usePlayerStore } from '@/store/playerStore'
 import { AvatarLightbox } from './AvatarLightbox'
 import { PlayerAvatar } from './PlayerAvatar'
 
+/** Centre-crop a picked image to a square portrait (JPEG data URL). */
+async function squarePortrait(file: File, size = 768): Promise<string> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    img.src = url
+    await img.decode()
+    const side = Math.min(img.naturalWidth, img.naturalHeight)
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('no canvas')
+    ctx.imageSmoothingQuality = 'high'
+    // bias slightly upward so faces in portrait photos stay centred
+    const sx = (img.naturalWidth - side) / 2
+    const sy = Math.max(0, (img.naturalHeight - side) * 0.35)
+    ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size)
+    return canvas.toDataURL('image/jpeg', 0.92)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export function ProfileSheet({ open, onClose }: { open: boolean; onClose(): void }) {
+  const pickRef = useRef<HTMLInputElement>(null)
+  const [pictureMsg, setPictureMsg] = useState<string | null>(null)
+  async function usePictureFromDevice(file: File | undefined) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setPictureMsg('Please choose an image file.')
+      return
+    }
+    setPictureMsg('Creating your portrait…')
+    try {
+      const photo = await squarePortrait(file)
+      // Toon / Sentinel form regenerate from the new picture. Face ID keeps your scanned face.
+      await db.profile.update('me', { photo, toon: undefined, toonVersion: 0 })
+      setPictureMsg('Picture updated ✔')
+    } catch {
+      setPictureMsg('That image could not be opened. Try a JPG or PNG.')
+    } finally {
+      if (pickRef.current) pickRef.current.value = ''
+      window.setTimeout(() => setPictureMsg(null), 2500)
+    }
+  }
   const [zoomOpen, setZoomOpen] = useState(false)
   const profile = useProfile()
   const { name, title, avatarMode, suitFace, visor, bounty, setProfile } = usePlayerStore()
@@ -57,6 +103,15 @@ export function ProfileSheet({ open, onClose }: { open: boolean; onClose(): void
       </div>
 
       <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] opacity-70">Case-file picture</p>
+      {profile && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => pickRef.current?.click()} className="rounded-full border-2 border-black bg-white px-3 py-1.5 text-sm font-bold">
+            🖼️ Use a picture from your device
+          </button>
+          <input ref={pickRef} type="file" accept="image/*" className="hidden" onChange={(e) => void usePictureFromDevice(e.target.files?.[0])} />
+          {pictureMsg && <span className="text-xs font-bold opacity-80">{pictureMsg}</span>}
+        </div>
+      )}
       {profile ? (
         <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Case-file picture">
           {(

@@ -5,7 +5,7 @@ import gsap from 'gsap'
 import { motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
-import { alarmSound } from '@/audio/alarmSound'
+import { alarmSound, isCustomSound } from '@/audio/alarmSound'
 import { ringtoneFor } from '@/audio/ringtones'
 import { ImpactText } from '@/components/fx/ImpactText'
 import { SpeedLines } from '@/components/fx/SpeedLines'
@@ -111,7 +111,7 @@ export function RingPage() {
         <div className="raid-ui flex w-full flex-col items-center gap-3">
           <p className="font-display text-2xl tracking-wide">
             {active.label}
-            {active.test ? ' (test)' : ''} · {ringtoneFor(active.sound).icon} {ringtoneFor(active.sound).name}
+            {active.test ? ' (test)' : ''} · {isCustomSound(active.sound) ? '🎵 Your sound' : `${ringtoneFor(active.sound).icon} ${ringtoneFor(active.sound).name}`}
           </p>
           <ul className="flex flex-wrap justify-center gap-2" aria-label="Trials to complete">
             {active.missions.map((m, i) => (

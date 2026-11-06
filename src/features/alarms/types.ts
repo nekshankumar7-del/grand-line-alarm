@@ -17,7 +17,8 @@ export interface Alarm {
   label: string
   enabled: boolean
   crewId: HeroId
-  sound?: RingtoneId
+  /** A built-in ringtone id, or `custom:<id>` for a sound picked from the device. */
+  sound?: RingtoneId | `custom:${string}`
   missions: MissionEntry[]
   createdAt: number
   /** Occurrences before this moment never fire (stops a just-saved alarm ringing instantly). */
@@ -34,7 +35,8 @@ export interface ActiveAlarm {
   completed: string[]
   firedAt: number
   stage: 'ringing' | 'trials'
-  sound?: RingtoneId
+  /** A built-in ringtone id, or `custom:<id>` for a sound picked from the device. */
+  sound?: RingtoneId | `custom:${string}`
   /** Same-person face check passed for this ring. */
   identityVerified?: boolean
   test?: boolean

@@ -145,7 +145,7 @@ export function AlarmEditorPage() {
         </Section>
 
         <Section step={3} icon="🔊" title="Alarm sound">
-          <SoundPicker value={draft.sound ?? (edition.defaultSound as RingtoneId)} onChange={(sound) => update({ sound })} />
+          <SoundPicker value={draft.sound ?? (edition.defaultSound as RingtoneId)} onChange={(sound) => update({ sound: sound as Alarm['sound'] })} />
           <p className="mt-2 text-xs text-white/60">Tap to preview. Starts soft, reaches full volume after 2 min, gets harsher after 5.</p>
         </Section>
 

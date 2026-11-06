@@ -1,7 +1,12 @@
+import { db } from '@/db/db'
 import { DEFAULT_RINGTONE, ringtoneFor, RINGTONE_MAP, type RingtoneId } from './ringtones'
+
+export const CUSTOM_PREFIX = 'custom:'
+export const isCustomSound = (id: string | undefined): id is `custom:${string}` => Boolean(id?.startsWith(CUSTOM_PREFIX))
 
 /**
  * Alarm audio engine (Web Audio).
+ * Built-in ringtones are synthesised; a sound picked from the device is decoded and looped.
  * Gentle 30s fade-in → full volume after 2 min → harsh "classic" layer added after 5 min.
  */
 class AlarmSound {
@@ -10,11 +15,17 @@ class AlarmSound {
   private previewGain: GainNode | null = null
   private timer: number | null = null
   private previewTimer: number | null = null
+  private previewOut: GainNode | null = null
+  private previewSource: AudioBufferSourceNode | null = null
   private startedAt = 0
   private nextLoop = 0
   private nextHarsh = 0
   private ducked = false
   private ringtone: RingtoneId = DEFAULT_RINGTONE
+  /** Device sound currently playing as the alarm (looped). */
+  private customId: string | null = null
+  private customSource: AudioBufferSourceNode | null = null
+  private bufferCache = new Map<string, AudioBuffer>()
 
   /** Must run inside a user gesture at least once so later alarms may play. */
   unlock() {
@@ -24,7 +35,7 @@ class AlarmSound {
       this.master.gain.value = 0
       this.master.connect(this.ctx.destination)
       this.previewGain = this.ctx.createGain()
-      this.previewGain.gain.value = 0.6
+      this.previewGain.gain.value = 0.7
       this.previewGain.connect(this.ctx.destination)
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume()
@@ -34,9 +45,14 @@ class AlarmSound {
     return !this.ctx || this.ctx.state !== 'running'
   }
 
-  start(firedAt: number, ringtone: string | undefined) {
+  start(firedAt: number, sound: string | undefined) {
     this.startedAt = firedAt
-    this.ringtone = ringtoneFor(ringtone).id
+    if (isCustomSound(sound)) {
+      this.customId = sound.slice(CUSTOM_PREFIX.length)
+    } else {
+      this.customId = null
+      this.ringtone = ringtoneFor(sound).id
+    }
     if (this.timer !== null) return
     this.stopPreview()
     try {
@@ -46,6 +62,7 @@ class AlarmSound {
     }
     this.nextLoop = 0
     this.nextHarsh = 0
+    if (this.customId) void this.startCustom(this.customId)
     this.schedule()
     this.timer = window.setInterval(() => this.schedule(), 200)
   }
@@ -53,6 +70,12 @@ class AlarmSound {
   stop() {
     if (this.timer !== null) window.clearInterval(this.timer)
     this.timer = null
+    try {
+      this.customSource?.stop()
+    } catch {
+      /* already stopped */
+    }
+    this.customSource = null
     if (this.ctx && this.master) this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05)
   }
 
@@ -60,29 +83,83 @@ class AlarmSound {
     this.ducked = ducked
   }
 
-  /** Plays ~2 loops of a ringtone at a comfortable volume (editor preview). */
-  preview(id: RingtoneId) {
+  /** Decode (and cache) a device sound. */
+  private async loadBuffer(id: string) {
+    const cached = this.bufferCache.get(id)
+    if (cached) return cached
+    this.unlock()
+    const rec = await db.sounds.get(id)
+    if (!rec || !this.ctx) return null
+    const buffer = await this.ctx.decodeAudioData(await rec.blob.arrayBuffer())
+    this.bufferCache.set(id, buffer)
+    return buffer
+  }
+
+  private async startCustom(id: string) {
+    try {
+      const buffer = await this.loadBuffer(id)
+      // still ringing with this sound?
+      if (!buffer || this.timer === null || this.customId !== id || !this.ctx || !this.master) return
+      const src = this.ctx.createBufferSource()
+      src.buffer = buffer
+      src.loop = true
+      src.connect(this.master)
+      src.start()
+      this.customSource = src
+    } catch {
+      // unreadable file → fall back to the built-in ringtone so the alarm never goes silent
+      this.customId = null
+    }
+  }
+
+  /** Preview a ringtone (built-in or from the device) at a comfortable volume. */
+  preview(id: string) {
     this.unlock()
     const { ctx, previewGain } = this
     if (!ctx || !previewGain || this.timer !== null) return
     this.stopPreview()
-    const tone = RINGTONE_MAP[id]
     const out = ctx.createGain()
     out.connect(previewGain)
+    this.previewOut = out
+
+    if (isCustomSound(id)) {
+      void this.loadBuffer(id.slice(CUSTOM_PREFIX.length))
+        .then((buffer) => {
+          if (!buffer || this.previewOut !== out) return
+          const src = ctx.createBufferSource()
+          src.buffer = buffer
+          src.connect(out)
+          src.start(ctx.currentTime + 0.05, 0, Math.min(5, buffer.duration))
+          this.previewSource = src
+        })
+        .catch(() => undefined)
+      this.previewTimer = window.setTimeout(() => this.stopPreview(), 5500)
+      return
+    }
+
+    const tone = RINGTONE_MAP[id as RingtoneId] ?? RINGTONE_MAP[DEFAULT_RINGTONE]
     const t = ctx.currentTime + 0.05
     const loops = Math.max(1, Math.ceil(3 / tone.length))
     for (let i = 0; i < loops; i++) tone.play(ctx, out, t + i * tone.length)
-    this.previewTimer = window.setTimeout(() => out.disconnect(), (loops * tone.length + 1.5) * 1000)
-    this.previewOut = out
+    this.previewTimer = window.setTimeout(() => this.stopPreview(), (loops * tone.length + 1.5) * 1000)
   }
-
-  private previewOut: GainNode | null = null
 
   stopPreview() {
     if (this.previewTimer !== null) window.clearTimeout(this.previewTimer)
     this.previewTimer = null
+    try {
+      this.previewSource?.stop()
+    } catch {
+      /* already stopped */
+    }
+    this.previewSource = null
     this.previewOut?.disconnect()
     this.previewOut = null
+  }
+
+  /** Forget a decoded device sound (after it's deleted). */
+  forget(id: string) {
+    this.bufferCache.delete(id)
   }
 
   private volumeAt(elapsed: number) {
@@ -97,11 +174,15 @@ class AlarmSound {
     master.gain.setTargetAtTime(this.volumeAt(elapsed) * (this.ducked ? 0.2 : 1), ctx.currentTime, 0.25)
 
     const horizon = ctx.currentTime + 0.6
-    const tone = ringtoneFor(this.ringtone)
-    if (this.nextLoop < ctx.currentTime) this.nextLoop = ctx.currentTime + 0.05
-    while (this.nextLoop < horizon) {
-      tone.play(ctx, master, this.nextLoop)
-      this.nextLoop += tone.length
+    // Device sound loops on its own; until it's decoded (or if it fails), the classic beep covers.
+    const customPlaying = Boolean(this.customId && this.customSource)
+    if (!customPlaying) {
+      const tone = this.customId ? RINGTONE_MAP.classic : ringtoneFor(this.ringtone)
+      if (this.nextLoop < ctx.currentTime) this.nextLoop = ctx.currentTime + 0.05
+      while (this.nextLoop < horizon) {
+        tone.play(ctx, master, this.nextLoop)
+        this.nextLoop += tone.length
+      }
     }
     if (elapsed > 300) {
       const harsh = RINGTONE_MAP.classic
