@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode, useRef } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import type { RingtoneId } from '@/audio/ringtones'
 import { AuroraBackdrop } from '@/components/effects/AuroraBackdrop'
@@ -17,6 +17,7 @@ import { formatCountdown } from '../format'
 import { nextOccurrence } from '../schedule'
 import type { Alarm } from '../types'
 import { BackupCodeSheet } from './BackupCodeSheet'
+import { NativeSetupSheet, needsNativeSetup } from './NativeSetupSheet'
 import { DayPicker } from './DayPicker'
 import { MissionBuilder } from './MissionBuilder'
 import { SoundPicker } from './SoundPicker'
@@ -55,6 +56,9 @@ export function AlarmEditorPage() {
   const [draft, setDraft] = useState<Alarm | null>(() => (id ? null : newAlarmDraft()))
   const [missing, setMissing] = useState(false)
   const [codeFor, setCodeFor] = useState<null | 'save' | 'test'>(null)
+  /** Android app: strict-mode permission setup shown when an alarm is set. */
+  const [setupFor, setSetupFor] = useState<null | 'save' | 'test'>(null)
+  const setupDone = useRef(false)
   const { backupCode, backupCodeSeen, ensureBackupCode, acknowledgeBackupCode } = useSettingsStore()
 
   useEffect(() => {
@@ -91,6 +95,10 @@ export function AlarmEditorPage() {
 
   async function run(action: 'save' | 'test') {
     if (!draft || !valid) return
+    if (!setupDone.current && (await needsNativeSetup())) {
+      setSetupFor(action)
+      return
+    }
     void askNotificationPermission()
     if (!backupCodeSeen) {
       ensureBackupCode()
@@ -202,6 +210,16 @@ export function AlarmEditorPage() {
         </div>
       </motion.div>
 
+      <NativeSetupSheet
+        open={setupFor !== null}
+        onClose={() => setSetupFor(null)}
+        onDone={() => {
+          setupDone.current = true
+          const action = setupFor
+          setSetupFor(null)
+          if (action) void run(action)
+        }}
+      />
       <BackupCodeSheet
         code={backupCode ?? ''}
         open={codeFor !== null && Boolean(backupCode)}

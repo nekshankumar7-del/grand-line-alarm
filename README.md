@@ -20,3 +20,7 @@ npm run build && npm run preview
 ```
 
 All camera processing happens on the device; nothing is recorded or uploaded.
+
+## License
+
+Copyright © 2026 Nekshan Kumar. **All rights reserved.** This is proprietary software — see [LICENSE](LICENSE). No permission is granted to copy, modify, distribute or use it without written consent.
